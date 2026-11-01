@@ -21,7 +21,7 @@ type Person struct {
 
 func GeneratePerson(opt Options) (p Person, e error) {
 	p.FamilyName, p.GivenName = generateNames(opt)
-	p.FamilyNameKana, p.GivenNameKana = generateKana()
+	p.FamilyNameKana, p.GivenNameKana = generateKana(opt)
 	p.Gender = GetRandomGender(opt.IncludeUnanswered)
 
 	pref, err := getPrefectureByRate(rand.Float64())
@@ -43,11 +43,13 @@ func GeneratePerson(opt Options) (p Person, e error) {
 }
 
 func generateNames(opt Options) (family, given string) {
+	if opt.UseAlpha {
+		// 氏名合計で文字数上限以下とし、氏と名の長さはそれぞれランダムにする
+		familyLen := randRange(1, maxNameLength-1)
+		return randomChars(familyLen, jisx0208Alphabet), randomChars(randRange(1, maxNameLength-familyLen), jisx0208Alphabet)
+	}
 	familyLen := randomNameLength()
 	givenLen := min(randomNameLength(), maxNameLength-familyLen)
-	if opt.UseAlpha {
-		return randomChars(familyLen, jisx0208Alphabet), randomChars(givenLen, jisx0208Alphabet)
-	}
 	return randomWeightedChars(familyLen, mjSources(opt)...), randomChars(givenLen, jinmeikanji, hiragana, katakana)
 }
 
@@ -65,7 +67,12 @@ func randomNameLength() int {
 	return len(nameLengthRates)
 }
 
-func generateKana() (family, given string) {
+func generateKana(opt Options) (family, given string) {
+	if opt.UseAlpha {
+		// 氏名合計で文字数上限以下とし、氏と名の長さはそれぞれランダムにする
+		familyLen := randRange(1, maxKanaLength-1)
+		return randomChars(familyLen, katakana), randomChars(randRange(1, maxKanaLength-familyLen), katakana)
+	}
 	familyLen := randRange(1, 8)
 	givenLen := randRange(1, min(8, maxKanaLength-familyLen))
 	return randomChars(familyLen, katakana), randomChars(givenLen, katakana)
